@@ -6,8 +6,6 @@ C++ physics based ray tracing engine-- in progress!
 Here is my Blender recreation of Whitted's sample scene: 
 ![image](https://github.com/user-attachments/assets/6b49ea53-3ef2-499a-972b-2f8d33353361)
 
-![image](https://github.com/user-attachments/assets/0bef5973-33ec-4d77-8ea7-d5656471b428)
-
 It is as faithful of a recreation that I could manage! It may be tiny bit off but it achieves a semblance. 
 Here are its measurements (location in x,y,z format): 
 * Center sphere
