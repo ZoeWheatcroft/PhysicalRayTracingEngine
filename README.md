@@ -1,4 +1,3 @@
-# Physical Ray Tracing Engine
 C++ physics based ray tracing engine-- in progress! 
 
 **Setting the Scene**
