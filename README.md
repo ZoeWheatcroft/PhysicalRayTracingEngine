@@ -1,3 +1,5 @@
+Devs: Zoe Wheatcroft
+
 C++ physics based ray tracing engine-- in progress! 
 
 **Setting the Scene**
