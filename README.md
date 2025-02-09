@@ -8,7 +8,7 @@ Here is my Blender recreation of Whitted's sample scene:
 ![image](https://github.com/user-attachments/assets/6b49ea53-3ef2-499a-972b-2f8d33353361)
 
 It is as faithful of a recreation that I could manage! It may be tiny bit off but it achieves a semblance. 
-Here are its measurements (location in x,y,z format): 
+Here are its measurements (location in x,y,z format, y-up is positive): 
 * Center sphere
   * size: radius of 1
   * location: (0, 1.03, -4.4)
