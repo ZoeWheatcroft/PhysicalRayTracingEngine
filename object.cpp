@@ -2,7 +2,7 @@
 
 #include "object.h"
 
-Color Object::intersect()
+float Object::intersect(Color* color, Ray ray)
 {
     printf("just an object... no intersection");
 }
@@ -22,7 +22,7 @@ Sphere::Sphere(float x, float y, float z, float radius)
 	this->radius = radius;
 }
 
-bool Sphere::intersect(Color* color, Ray ray)
+float Sphere::intersect(Color* color, Ray ray)
 {
     float dx = ray.direction[X_AXIS];
     float dy = ray.direction[Y_AXIS];
@@ -41,12 +41,82 @@ bool Sphere::intersect(Color* color, Ray ray)
 	float B = 2* ( dx*(xo - center[X_AXIS]) + dy*(yo-center[Y_AXIS]) + dz*(zo - center[Z_AXIS]));
 	float C = pow((xo - center[X_AXIS]), 2) + pow(yo - center[Y_AXIS], 2) + pow(zo - center[Z_AXIS], 2) - pow(radius, 2);
 
-	if((pow(B, 2) - 4*C) >= 0)
+	float root = pow(B, 2) - 4*C;
+
+	if(root < 0)
 	{
-		*color = this->color;
-		return true;
+		return -1;
 	}
 
-	return false;
+	//calculate root
+	*color = this->color;
 
+	float posDist = (-B+sqrt(root))/2;
+	float negDist = (-B-sqrt(root))/2;
+
+	//use smallest dist 
+	float dist = posDist > negDist ? negDist : posDist;
+
+	return dist;
+
+}
+
+
+float Triangle::intersect(Color* color, Ray ray)
+{
+	*color = {255, 0, 0};
+
+	
+	float edge1 [3] = {0, 0, 0};
+	float edge2 [3] = {0, 0, 0};
+	float T [3] = {0,0,0};
+	float P [3] = {0,0,0};
+	float Q [3] = {0,0,0};
+
+	for(int i = 0; i < 3; i++)
+	{
+		edge1[i] = point1[i] - point0[i];
+		edge2[i] = point2[i] - point0[i];
+		T[i] = ray.origin[i] - point0[i];
+	}
+
+	// P = cross product D x e2
+	P[0] = ray.direction[1]*edge2[2] - ray.direction[2]*edge2[1];
+	P[1] = ray.direction[2]*edge2[0] - ray.direction[0]*edge2[2];
+	P[2] = ray.direction[0]*edge2[1] - ray.direction[1]*edge2[0];
+
+	//cross product T and e1
+	Q[0] = T[1]*edge1[2] - T[2]*edge1[1];
+	Q[1] = T[2]*edge1[0] - T[0]*edge1[2];
+	Q[2] = T[0]*edge1[1] - T[1]*edge1[0];
+
+	//denominator
+	float denominator = cross(P, edge1);
+
+	if(denominator == 0)
+	{
+		return -1;
+	}
+
+	float w = cross(Q, edge2)/denominator;
+	float u = cross(P, T)/denominator;
+	float v = cross(Q, ray.direction)/denominator;
+
+	if(u < 0 || v < 0 || u + v > 1)
+	{
+		return -1;
+	}
+
+	return w;
+	            
+}
+
+float Triangle::cross(float a [3], float b [3])
+{
+	float result = 0;
+	for(int i = 0; i < 3; i++)
+	{
+		result = result + a[i]*b[i];
+	}
+	return result;
 }

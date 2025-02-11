@@ -10,8 +10,8 @@
 class Object{
     public:
         int material;
-        virtual Color intersect();
-
+        virtual float intersect(Color* color, Ray ray);
+        Color color;
         Object();
 
         ~Object();
@@ -21,14 +21,25 @@ class Object{
 
 class Sphere : public Object{
     public:
-        bool intersect(Color* color, Ray ray);
+        float intersect(Color* color, Ray ray);
 
         float center [3] = {};
         float radius;
-        Color color;
 
         Sphere(float x, float y, float z, float radius);
 
+};
+
+class Triangle : public Object{
+    public:
+        float intersect(Color* color, Ray ray);
+
+        float point0 [3] = {};
+        float point1 [3] = {};
+        float point2 [3] = {};
+
+
+        float cross(float a [3], float b [3]);
 };
 
 #endif

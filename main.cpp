@@ -80,21 +80,35 @@ int main() {
     Camera camera;
     camera.viewpoint[0] = 0;
     camera.viewpoint[1] = 1;
-    camera.viewpoint[2] = -7.8;
-    camera.focalLength = 0.7;
+    camera.viewpoint[2] = -6.8;
+    camera.focalLength = 0.5;
     camera.width = 1;
     camera.height = 0.5625;
 
     //cast ray from viewpoint through pixels
 
-    Sphere* sphere1 = new Sphere(0, 1.03, -4.4, 1);
-    sphere1->color = {200, 200, 200};
-    Sphere* sphere2 = new Sphere(0.87, 0.6, -2.0, 1);
+    Sphere* sphere1 = new Sphere(0, 1.43, -3.4, 1);
+    sphere1->color = {100, 100, 200};
+    Sphere* sphere2 = new Sphere(1.57, 1.0, -2.0, 1);
     sphere2->color = {200, 200, 255};
+    
+    Triangle* triangle = new Triangle();
+    triangle->point0[X_AXIS] = -1.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = 1;
+    triangle->point1[X_AXIS] = 2.6; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 1;
+    triangle->point2[X_AXIS] = -1.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = -8;
+    triangle->color = {255, 0, 0};
+
+    Triangle* triangle2 = new Triangle();
+    triangle2->point0[X_AXIS] = 2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
+    triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 1;
+    triangle2->point2[X_AXIS] = -1.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
+    triangle2->color = {200, 0, 0};
 
     std::vector<Object*> objects;
     objects.push_back(sphere1);
     objects.push_back(sphere2);
+    objects.push_back(triangle);
+    objects.push_back(triangle2);
 
 
     for(int y = 0; y < H; y++)
@@ -103,9 +117,9 @@ int main() {
         {
             //project ray from viewpoint (origin) through pixel and find collision
             Color* color = new Color();
+            *color = {10, 255, 10};
             Ray ray;
             std::copy(std::begin(camera.viewpoint), std::end(camera.viewpoint), std::begin(ray.origin));
-            
             //calculate normalized direction
             float pixelWidth = camera.width/W; 
             float pixelHeight = camera.height/H;
@@ -122,13 +136,26 @@ int main() {
             }
             std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
 
+            float smallestDist = -1;
+            Object* closestObj;
+            for(Object* obj : objects)
+            {
+                float dist = obj->intersect(color, ray);
+                if(dist != -1 && (smallestDist == -1 || dist < smallestDist)){
+                    smallestDist = dist;
+                    closestObj = obj;
+                }
+            }
 
-            if(sphere1->intersect(color, ray)){
-                writePixel(((int)color->red)%255, ((int)color->green)%255, ((int)color->blue)%255, &file, x, y);
+            if(smallestDist == -1)
+            {
+                *color = {10, 10, 50};
             }
             else{
-                writePixel(100, 100, 255, &file, x, y);
+                *color = closestObj->color;
             }
+
+            writePixel(((int)color->red)%256, ((int)color->green)%256, ((int)color->blue)%256, &file, x, y);
         }
     }
 
