@@ -2,6 +2,10 @@ Devs: Zoe Wheatcroft
 
 C++ physics based ray tracing engine-- in progress! 
 
+
+**Basic Image!**
+![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
+
 **Setting the Scene**
 
 Here is my Blender recreation of Whitted's sample scene: 
@@ -23,5 +27,3 @@ Here are its measurements (location in x,y,z format, y-up is positive):
   * virtual viewpoint: (0, 1, -7.8)
   * rotation: (0, 0, 0)
 
-**Basic Image!**
-![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
