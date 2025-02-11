@@ -22,3 +22,6 @@ Here are its measurements (location in x,y,z format, y-up is positive):
   * width: 1, height 0.5625
   * virtual viewpoint: (0, 1, -7.8)
   * rotation: (0, 0, 0)
+
+**Basic Image!**
+![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
