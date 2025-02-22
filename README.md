@@ -2,6 +2,7 @@ Devs: Zoe Wheatcroft
 
 C++ physics based ray tracing engine-- in progress! 
 
+code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
 
 **Basic Image!**
 ![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
