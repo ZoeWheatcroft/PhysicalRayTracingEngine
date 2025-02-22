@@ -3,6 +3,7 @@ Devs: Zoe Wheatcroft
 C++ physics based ray tracing engine-- in progress! 
 
 code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
+
 **Phong Lighting**
 ![image](https://github.com/user-attachments/assets/0c997d96-9bf3-442f-bcfc-fbe0aa0ed766)
 
