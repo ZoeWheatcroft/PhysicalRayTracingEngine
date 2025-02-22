@@ -72,6 +72,8 @@ void writePixel(int red, int green, int blue, std::ofstream* file, int x, int y)
     }
 }
 
+
+//255,255,255 is white and 0,0,0 is black
 int main() {
 
     std::ofstream file;
@@ -91,6 +93,9 @@ int main() {
     sphere1->color = {100, 100, 200};
     Sphere* sphere2 = new Sphere(1.57, 1.0, -2.0, 1);
     sphere2->color = {200, 200, 255};
+
+    Light* light = new Light(1.57, 20, -3.0, 0.5);
+    light->color = {255, 255, 255};
     
     Triangle* triangle = new Triangle();
     triangle->point0[X_AXIS] = -1.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = 1;
@@ -102,7 +107,7 @@ int main() {
     triangle2->point0[X_AXIS] = 2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
     triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 1;
     triangle2->point2[X_AXIS] = -1.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
-    triangle2->color = {200, 0, 0};
+    triangle2->color = {255, 255, 255};
 
     std::vector<Object*> objects;
     objects.push_back(sphere1);
@@ -110,6 +115,13 @@ int main() {
     objects.push_back(triangle);
     objects.push_back(triangle2);
 
+    World* world = new World();
+    world->addObject(sphere1);
+    world->addObject(sphere2);
+    world->addObject(triangle2);
+    world->addObject(triangle);
+
+    world->addLight(light);
 
     for(int y = 0; y < H; y++)
     {
@@ -137,13 +149,14 @@ int main() {
             std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
 
             float smallestDist = -1;
-            Object* closestObj;
+            IntersectionInfo* closestIntersection;
             for(Object* obj : objects)
             {
-                float dist = obj->intersect(color, ray);
+                IntersectionInfo* info = new struct IntersectionInfo;
+                float dist = obj->intersect(info, ray);
                 if(dist != -1 && (smallestDist == -1 || dist < smallestDist)){
                     smallestDist = dist;
-                    closestObj = obj;
+                    closestIntersection = info;
                 }
             }
 
@@ -152,7 +165,13 @@ int main() {
                 *color = {10, 10, 50};
             }
             else{
-                *color = closestObj->color;
+                //we should now theoretically have intersection
+                //use intersection info with light to get light values
+                Color* luminance = new struct Color;
+                world->applyPhong(closestIntersection, luminance);
+                //tone reproduction
+                *color = *closestIntersection->color;
+                color->scale(luminance);
             }
 
             writePixel(((int)color->red)%256, ((int)color->green)%256, ((int)color->blue)%256, &file, x, y);
@@ -160,8 +179,6 @@ int main() {
     }
 
     file.close();
-
-
 
     std::time_t t = std::time(0);   // get time now
     std::tm* now = std::localtime(&t);

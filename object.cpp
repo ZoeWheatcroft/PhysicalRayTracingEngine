@@ -2,7 +2,7 @@
 
 #include "object.h"
 
-float Object::intersect(Color* color, Ray ray)
+float Object::intersect(IntersectionInfo* info, Ray ray)
 {
     printf("just an object... no intersection");
 }
@@ -11,7 +11,6 @@ Object::Object()
 {
     printf("constructed obj"); 
 }
-
 
 Sphere::Sphere(float x, float y, float z, float radius)
 {
@@ -22,8 +21,12 @@ Sphere::Sphere(float x, float y, float z, float radius)
 	this->radius = radius;
 }
 
-float Sphere::intersect(Color* color, Ray ray)
+float Sphere::intersect(IntersectionInfo* info, Ray ray)
 {
+	Color* color = new Color{0,0,0};
+	info->color = color;
+	*color = {255, 0, 0};
+
     float dx = ray.direction[X_AXIS];
     float dy = ray.direction[Y_AXIS];
     float dz = ray.direction[Z_AXIS];
@@ -57,13 +60,33 @@ float Sphere::intersect(Color* color, Ray ray)
 	//use smallest dist 
 	float dist = posDist > negDist ? negDist : posDist;
 
+	//calculate intersection point and store
+	info->intersectionLocation[X_AXIS] = ray.origin[X_AXIS] + ray.direction[X_AXIS]*dist;
+	info->intersectionLocation[Y_AXIS] = ray.origin[Y_AXIS] + ray.direction[Y_AXIS]*dist;
+	info->intersectionLocation[Z_AXIS] = ray.origin[Z_AXIS] + ray.direction[Z_AXIS]*dist;
+
+	//calculate normal and store
+	float normal [3];
+	for(int i = 0; i < 3; i++)
+	{
+		normal[i] = info->intersectionLocation[i] - center[i];
+	}
+	//normalize normal
+	float normalMag = sqrt(pow(normal[X_AXIS], 2) + pow(normal[Y_AXIS], 2) + pow(normal[Z_AXIS], 2));
+	for(int i = 0; i < 3; i++)
+	{
+		normal[i] = normal[i]/normalMag;
+	}
+	*info->normal = *normal;
+
 	return dist;
 
 }
 
-
-float Triangle::intersect(Color* color, Ray ray)
+float Triangle::intersect(IntersectionInfo* info, Ray ray)
 {
+	Color* color = new Color{0,0,0};
+	info->color = color;
 	*color = {255, 0, 0};
 
 	
@@ -107,6 +130,15 @@ float Triangle::intersect(Color* color, Ray ray)
 		return -1;
 	}
 
+	//calculate intersection point and store
+	info->intersectionLocation[X_AXIS] = ray.origin[X_AXIS] + ray.direction[X_AXIS]*w;
+	info->intersectionLocation[Y_AXIS] = ray.origin[Y_AXIS] + ray.direction[Y_AXIS]*w;
+	info->intersectionLocation[Z_AXIS] = ray.origin[Z_AXIS] + ray.direction[Z_AXIS]*w;
+	
+	info->normal[0] = 0;
+	info->normal[1] = 1;
+	info->normal[2] = 0;
+
 	return w;
 	            
 }
@@ -119,4 +151,18 @@ float Triangle::cross(float a [3], float b [3])
 		result = result + a[i]*b[i];
 	}
 	return result;
+}
+
+Light::Light(float x, float y, float z, float radius)
+{
+	center[X_AXIS] = x;
+	center[Y_AXIS] = y;
+	center[Z_AXIS] = z;
+
+	this->radius = radius;
+}
+
+float Light::intersect(IntersectionInfo* info, Ray ray)
+{
+	return -1;
 }
