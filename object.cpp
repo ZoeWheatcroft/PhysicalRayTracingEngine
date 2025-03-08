@@ -7,9 +7,14 @@ float Object::intersect(IntersectionInfo* info, Ray ray)
     printf("just an object... no intersection");
 }
 
+int Object::getTextureColor(IntersectionInfo *info)
+{
+    return 0;
+}
+
 Object::Object()
 {
-    printf("constructed obj"); 
+    //printf("constructed obj"); 
 }
 
 Sphere::Sphere(float x, float y, float z, float radius)
@@ -19,6 +24,16 @@ Sphere::Sphere(float x, float y, float z, float radius)
 	center[Z_AXIS] = z;
 
 	this->radius = radius;
+}
+
+int Sphere::getTextureColor(IntersectionInfo* info)
+{
+	if((int)this->texture == 0)
+	{
+		return 0;
+	}
+
+	return 0;
 }
 
 float Sphere::intersect(IntersectionInfo* info, Ray ray)
@@ -66,7 +81,7 @@ float Sphere::intersect(IntersectionInfo* info, Ray ray)
 	info->intersectionLocation[Z_AXIS] = ray.origin[Z_AXIS] + ray.direction[Z_AXIS]*dist;
 
 	//calculate normal and store
-	float normal [3];
+	float normal [3] = {};
 	for(int i = 0; i < 3; i++)
 	{
 		normal[i] = info->intersectionLocation[i] - center[i];
@@ -75,13 +90,15 @@ float Sphere::intersect(IntersectionInfo* info, Ray ray)
 	float normalMag = sqrt(pow(normal[X_AXIS], 2) + pow(normal[Y_AXIS], 2) + pow(normal[Z_AXIS], 2));
 	for(int i = 0; i < 3; i++)
 	{
+		float x = normal[i]/normalMag;
 		normal[i] = normal[i]/normalMag;
 	}
-	*info->normal = *normal;
+	std::copy(std::begin(normal), std::end(normal), info->normal);
 
 	return dist;
 
 }
+
 
 float Triangle::intersect(IntersectionInfo* info, Ray ray)
 {
@@ -129,12 +146,14 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	{
 		return -1;
 	}
+	*info->color = this->color;
 
 	//calculate intersection point and store
 	info->intersectionLocation[X_AXIS] = ray.origin[X_AXIS] + ray.direction[X_AXIS]*w;
 	info->intersectionLocation[Y_AXIS] = ray.origin[Y_AXIS] + ray.direction[Y_AXIS]*w;
 	info->intersectionLocation[Z_AXIS] = ray.origin[Z_AXIS] + ray.direction[Z_AXIS]*w;
 	
+	//TODO normal calculation
 	info->normal[0] = 0;
 	info->normal[1] = 1;
 	info->normal[2] = 0;
@@ -143,6 +162,54 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	            
 }
 
+int Triangle::getTextureColor(IntersectionInfo *info)
+{
+	if((int)this->texture == 0)
+	{
+		//if texture is none, return base color
+		return 0;
+	}
+
+	//TODO: add rotation to get flattened coords first
+	//note: in order for two checkerboards to align, their p0s need to be at the same z 
+	//		this is because checker size is not fitted to z length, so can overflow (board can have 2.5 sq in y direction)
+	if(this->texture == TextureEnum::CHECKER)
+	{
+		//get checker color from position
+		//checker assumes that 0 is the 90 degree corner of the triangle
+
+		//we'll set the checker squares to be n*n size, where n is x width/3 on p1->p2
+		float checkerWidth = 0;
+		if(point0[X_AXIS] != point1[X_AXIS]){
+			checkerWidth = fabs(point0[X_AXIS] - point1[X_AXIS]);
+		}
+		else{
+			checkerWidth = fabs(point0[X_AXIS] - point2[X_AXIS]);
+		}
+		checkerWidth = checkerWidth/15;
+
+		//check u,v position against width, where 0,0 in local coords is point0
+		//0,0 starts with a red square
+		float x = info->intersectionLocation[X_AXIS];
+		float z = info->intersectionLocation[Z_AXIS];
+
+		//if difference between x and point0[x] / checker width % 2 == 0 (even), red
+		int xMod = (int)std::floor(std::fabs(x - point0[X_AXIS])/checkerWidth)%2;
+		int zMod = (int)std::floor(std::fabs(z - point0[Z_AXIS])/checkerWidth)%2;
+		if(xMod == zMod)
+		{
+			*info->color = {255, 0, 0};
+		}
+		else{
+			*info->color = {255, 255, 0};
+		}
+	}
+
+    return 0;
+}
+
+//this is not a cross product
+//this is dot product
 float Triangle::cross(float a [3], float b [3])
 {
 	float result = 0;

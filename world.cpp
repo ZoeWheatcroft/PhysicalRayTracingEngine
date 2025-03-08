@@ -11,7 +11,7 @@ void World::test()
 World::World()
 {
     ambientLight = new Color();
-    *ambientLight = {100, 100, 100};;
+    *ambientLight = {30, 30, 30};;
 }
 
 int World::addObject(Object* obj)
@@ -37,6 +37,8 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
     for(int i = 0; i < lights.size(); i++)
     {
         Light* light = lights[i];
+        float kS = 0.5;
+        float kD = 0.5;
 
         // can we see light from point
         //calculate ray from point to light
@@ -63,6 +65,8 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         }
         std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
 
+
+
         //check if light is blocked
         IntersectionInfo* lightIntersection = new struct IntersectionInfo;
         int lightBlocked = 0; 
@@ -87,7 +91,7 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
 
         float intersection [3];
         std::copy(std::begin(intersection), std::end(intersection), std::begin(info->intersectionLocation));
-        float incomingLightDir [3] = {intersection[X_AXIS] - light->center[X_AXIS], intersection[Y_AXIS] - light->center[Y_AXIS], intersection[Z_AXIS] - light->center[Z_AXIS]};
+        float incomingLightDir [3] = {light->center[X_AXIS] - intersection[X_AXIS], light->center[Y_AXIS]-intersection[Y_AXIS] , light->center[Z_AXIS]-intersection[Z_AXIS]};
 
         //normalize the direction
         float incomingMag = sqrt(pow(incomingLightDir[X_AXIS], 2) + pow(incomingLightDir[Y_AXIS], 2) + pow(incomingLightDir[Z_AXIS], 2));
@@ -96,18 +100,69 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
             incomingLightDir[i] = incomingLightDir[i]/incomingMag;
         }
 
-        Triangle* tri = new Triangle(); //making triangle for cross function LOL
+        float length = sqrt(pow(incomingLightDir[X_AXIS], 2) + pow(incomingLightDir[Y_AXIS], 2) + pow(incomingLightDir[Z_AXIS], 2));
+        if(length < 0.999 || length > 1.001 )
+        {
+            printf("INCORRECT NORMALIZATION");
+        }
 
-        float normal_incoming_cross = tri->cross(incomingLightDir, info->normal);
-        normal_incoming_cross = normal_incoming_cross * 0.5;
+        float normal_incoming_cross = dotProduct(incomingLightDir, info->normal);
+        if(normal_incoming_cross < 0)
+        {
+            normal_incoming_cross = 0;
+        }
+        normal_incoming_cross = normal_incoming_cross * kD;
         Color* color = new Color();
         *color = light->color;
         color->red = color->red*normal_incoming_cross;
         color->green = color->green*normal_incoming_cross;
         color->blue = color->blue*normal_incoming_cross;
 
-        L->add(&light->color);
-                
+        L->add(color);
+
+        //calculate refelction vector
+        float reflectionVector [3] = {};
+        
+        float normalLength = sqrt(pow(info->normal[X_AXIS], 2) + pow(info->normal[Y_AXIS], 2) + pow(info->normal[Z_AXIS], 2));
+        float temp = 2*dotProduct(incomingLightDir, info->normal)/pow(normalLength, 2);
+        std::copy(std::begin(info->normal), std::end(info->normal), reflectionVector);
+        for(int i = 0; i < 3; i++)
+        {
+            reflectionVector[i] = reflectionVector[i] * temp;
+            reflectionVector[i] = incomingLightDir[i] - reflectionVector[i];
+        }
+        
+        //reverse of that
+        float viewingDir [3] = {};
+        std::copy(std::begin(camera->viewpoint), std::end(camera->viewpoint), viewingDir);
+        for(int i = 0; i < 3; i++){
+            viewingDir[i] -= info->intersectionLocation[i];
+        }
+        
+        //normalize viewing direction
+        float viewingMag = sqrt(pow(viewingDir[X_AXIS], 2) + pow(viewingDir[Y_AXIS], 2) + pow(viewingDir[Z_AXIS], 2));
+        for(int i = 0; i < 3; i++)
+        {
+            viewingDir[i] = viewingDir[i]/viewingMag;
+        }
+
+        float kE = 20.0;
+        // to kE as exponent
+        float specularScalar = pow(dotProduct(reflectionVector, viewingDir), kE);
+        specularScalar = specularScalar * kS;
+        Color* specColor = new Color();
+        *specColor = light->color;
+        specColor->red = specColor->red*specularScalar;
+        specColor->green = specColor->green*specularScalar;
+        specColor->blue = specColor->blue*specularScalar;
+
+        //add diffuse
+        L->add(specColor);
+
+        if(L->red < 0 || L->blue < 0 || L->green < 0)
+        {
+            printf("\nnegative color error");
+        }
     }
 
     //tone reproduction

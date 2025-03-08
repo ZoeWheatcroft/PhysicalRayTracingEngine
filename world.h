@@ -6,6 +6,8 @@
 #include <cmath>
 
 #include "object.h"
+#include "camera.h"
+#include "math.h"
 
 class World{
     public:
@@ -15,6 +17,8 @@ class World{
         std::vector<Object*> objects;
         // all the lights in the world
         std::vector<Light*> lights;
+        //the camera for the world
+        Camera* camera;
 
         // add an object to world's list of objs
         //return 0 on success

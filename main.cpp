@@ -8,6 +8,7 @@
 #include "world.h"
 #include "object.h"
 #include "camera.h"
+#include "math.h"
 
 using namespace std;
 
@@ -91,30 +92,45 @@ int main() {
 
     Sphere* sphere1 = new Sphere(0, 1.43, -3.4, 1);
     sphere1->color = {100, 100, 200};
-    Sphere* sphere2 = new Sphere(1.57, 1.0, -2.0, 1);
+    Sphere* sphere2 = new Sphere(1.57, 1.1, -2.0, 1);
     sphere2->color = {200, 200, 255};
 
-    Light* light = new Light(1.57, 20, -3.0, 0.5);
-    light->color = {255, 255, 255};
+    Light* light = new Light(3, 20, -3.0, 0.5);
+    light->color = {200, 200, 200};
+
+    Light* light_blue = new Light(-3, 20, 3.0, 0.5);
+    light_blue->color = {0, 0, 255};
     
     Triangle* triangle = new Triangle();
-    triangle->point0[X_AXIS] = -1.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = 1;
-    triangle->point1[X_AXIS] = 2.6; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 1;
-    triangle->point2[X_AXIS] = -1.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = -8;
-    triangle->color = {255, 0, 0};
+    triangle->point0[X_AXIS] = -1.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = -8;
+    triangle->point1[X_AXIS] = 2.6; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 0;
+    triangle->point2[X_AXIS] = -1.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = 0;
+
+    triangle->color = {255, 100, 100};
+    triangle->texture = TextureEnum::CHECKER;
 
     Triangle* triangle2 = new Triangle();
     triangle2->point0[X_AXIS] = 2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
-    triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 1;
+    triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 0;
     triangle2->point2[X_AXIS] = -1.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
-    triangle2->color = {255, 255, 255};
+    triangle2->color = {255, 100, 100};
+    triangle2->texture = TextureEnum::CHECKER;
+
+    //fun test for sea urchin wizard 
+    Triangle* spike = new Triangle();
+    spike->point0[X_AXIS] = 1,57; spike->point0[Y_AXIS] = 2; spike->point0[Z_AXIS] = -3;
+    spike->point1[X_AXIS] = -1.0; spike->point1[Y_AXIS] = 2; spike->point1[Z_AXIS] = -3;
+    spike->point2[X_AXIS] = 0; spike->point2[Y_AXIS] = 4; spike->point2[Z_AXIS] = -3;
+    spike->color = {255, 255, 0};
 
     std::vector<Object*> objects;
     objects.push_back(sphere1);
     objects.push_back(sphere2);
     objects.push_back(triangle);
     objects.push_back(triangle2);
+    //objects.push_back(spike);
 
+    //add everything into the world
     World* world = new World();
     world->addObject(sphere1);
     world->addObject(sphere2);
@@ -122,6 +138,9 @@ int main() {
     world->addObject(triangle);
 
     world->addLight(light);
+    world->addLight(light_blue);
+
+    world->camera = &camera;
 
     for(int y = 0; y < H; y++)
     {
@@ -150,6 +169,7 @@ int main() {
 
             float smallestDist = -1;
             IntersectionInfo* closestIntersection;
+            Object* closestObj;
             for(Object* obj : objects)
             {
                 IntersectionInfo* info = new struct IntersectionInfo;
@@ -157,6 +177,7 @@ int main() {
                 if(dist != -1 && (smallestDist == -1 || dist < smallestDist)){
                     smallestDist = dist;
                     closestIntersection = info;
+                    closestObj = obj;
                 }
             }
 
@@ -166,6 +187,9 @@ int main() {
             }
             else{
                 //we should now theoretically have intersection
+                //update intersection info with texture color
+                closestObj->getTextureColor(closestIntersection);
+
                 //use intersection info with light to get light values
                 Color* luminance = new struct Color;
                 world->applyPhong(closestIntersection, luminance);

@@ -14,6 +14,14 @@ struct IntersectionInfo{
     Color* color;
 };
 
+//enum of texture options for an object
+enum class TextureEnum {
+	NONE,
+	CHECKER,
+	IMAGE
+	//TODO: brick one day! 
+};
+
 
 class Object{
     public:
@@ -21,7 +29,15 @@ class Object{
         //intersection takes a pointer to info(that it fills if applicable) and ray
         //return: distance (w) of intersection or -1
         virtual float intersect(IntersectionInfo* info, Ray ray);
+
+        //given an intersection location, get the color for the texture
+        //if there is no texture, nothing should be done and the intersection info should be unchanged
+        //if there is a texture, update the color in intersection info based on it. 
+        //return: 0 on success, 1 on failure
+        virtual int getTextureColor(IntersectionInfo* info);
+
         Color color;
+        enum TextureEnum texture;
         Object();
 
         ~Object();
@@ -33,7 +49,6 @@ class Object{
 class Light : public Object{
     public:
         float intersect(IntersectionInfo* info, Ray ray);
-
         float center [3] = {};
         float radius;
 
@@ -43,7 +58,7 @@ class Light : public Object{
 class Sphere : public Object{
     public:
         float intersect(IntersectionInfo* info, Ray ray);
-
+        int getTextureColor(IntersectionInfo* info);
         float center [3] = {};
         float radius;
 
@@ -54,7 +69,7 @@ class Sphere : public Object{
 class Triangle : public Object{
     public:
         float intersect(IntersectionInfo* info, Ray ray);
-
+        int getTextureColor(IntersectionInfo* info);
         float point0 [3] = {};
         float point1 [3] = {};
         float point2 [3] = {};
