@@ -4,10 +4,16 @@ C++ physics based ray tracing engine-- in progress!
 
 code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
 
+**Procedural Textures**
+
+![procedural_textures](https://github.com/user-attachments/assets/f7231305-6b10-4ce0-a0ff-70f257a74dbe)
+
 **Phong Lighting**
-![image](https://github.com/user-attachments/assets/0c997d96-9bf3-442f-bcfc-fbe0aa0ed766)
+
+![phong](https://github.com/user-attachments/assets/0653795e-fc79-44c3-ac03-f7c4ba787570)
 
 **Basic Image!**
+
 ![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
 
 **Setting the Scene**
