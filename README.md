@@ -4,6 +4,9 @@ C++ physics based ray tracing engine-- in progress!
 
 code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
 
+**Phong Lighting**
+![image](https://github.com/user-attachments/assets/0c997d96-9bf3-442f-bcfc-fbe0aa0ed766)
+
 **Basic Image!**
 ![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
 
