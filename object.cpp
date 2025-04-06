@@ -94,6 +94,8 @@ float Sphere::intersect(IntersectionInfo* info, Ray ray)
 	}
 	std::copy(std::begin(normal), std::end(normal), info->normal);
 
+	info->id = this->id;
+
 	return dist;
 
 }
@@ -155,6 +157,8 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	info->normal[0] = 0;
 	info->normal[1] = 1;
 	info->normal[2] = 0;
+
+	info->id = this->id;
 
 	return w;
 	            

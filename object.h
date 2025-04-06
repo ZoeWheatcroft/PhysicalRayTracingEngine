@@ -23,6 +23,7 @@ struct IntersectionInfo{
     float intersectionLocation [3] = {};
     float normal [3] = {};
     Material mat;
+    int id = 0;
 };
 
 //enum of texture options for an object

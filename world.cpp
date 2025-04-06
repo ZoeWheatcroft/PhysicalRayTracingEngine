@@ -85,8 +85,8 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
 
         //get dir of s (incoming light direction)
 
-        float intersection [3];
-        std::copy(std::begin(intersection), std::end(intersection), std::begin(info->intersectionLocation));
+        float intersection [3] = {0,0,0};
+        std::copy(std::begin(info->intersectionLocation), std::end(info->intersectionLocation), std::begin(intersection));
         float incomingLightDir [3] = {light->center[X_AXIS] - intersection[X_AXIS], light->center[Y_AXIS]-intersection[Y_AXIS] , light->center[Z_AXIS]-intersection[Z_AXIS]};
 
         //normalize the direction

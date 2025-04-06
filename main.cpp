@@ -16,7 +16,7 @@ const int W = 960;
 const int H = 540;
 
 World* world;
-int MAX_DEPTH = 10;
+int MAX_DEPTH = 5;
 
 #pragma pack(push, 1) // Ensure the struct is packed without padding0
 struct BMPHeader {
