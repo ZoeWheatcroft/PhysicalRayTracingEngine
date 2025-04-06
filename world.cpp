@@ -11,7 +11,7 @@ void World::test()
 World::World()
 {
     ambientLight = new Color();
-    *ambientLight = {30, 30, 30};;
+    *ambientLight = {25, 25, 25};;
 }
 
 int World::addObject(Object* obj)
@@ -37,8 +37,6 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
     for(int i = 0; i < lights.size(); i++)
     {
         Light* light = lights[i];
-        float kS = 0.5;
-        float kD = 0.5;
 
         // can we see light from point
         //calculate ray from point to light
@@ -64,8 +62,6 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
             dir[i] = dir[i]/magnitude;
         }
         std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
-
-
 
         //check if light is blocked
         IntersectionInfo* lightIntersection = new struct IntersectionInfo;
@@ -111,9 +107,9 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         {
             normal_incoming_cross = 0;
         }
-        normal_incoming_cross = normal_incoming_cross * kD;
+        normal_incoming_cross = normal_incoming_cross * info->mat.kD;
         Color* color = new Color();
-        *color = light->color;
+        *color = light->mat.color;
         color->red = color->red*normal_incoming_cross;
         color->green = color->green*normal_incoming_cross;
         color->blue = color->blue*normal_incoming_cross;
@@ -146,12 +142,12 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
             viewingDir[i] = viewingDir[i]/viewingMag;
         }
 
-        float kE = 20.0;
+        
         // to kE as exponent
-        float specularScalar = pow(dotProduct(reflectionVector, viewingDir), kE);
-        specularScalar = specularScalar * kS;
+        float specularScalar = pow(dotProduct(reflectionVector, viewingDir), info->mat.kE);
+        specularScalar = specularScalar * info->mat.kS;
         Color* specColor = new Color();
-        *specColor = light->color;
+        *specColor = light->mat.color;
         specColor->red = specColor->red*specularScalar;
         specColor->green = specColor->green*specularScalar;
         specColor->blue = specColor->blue*specularScalar;
@@ -167,4 +163,31 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
 
     //tone reproduction
 
+}
+
+
+void World::getReflectionVector(IntersectionInfo* info, Ray incomingRay, Ray* reflectionRay)
+{
+    //calculate refelction vector
+
+    float normalLength = sqrt(pow(info->normal[X_AXIS], 2) + pow(info->normal[Y_AXIS], 2) + pow(info->normal[Z_AXIS], 2));
+    // float temp = 2*dotProduct(reflectionRay.direction, info->normal)/pow(normalLength, 2);
+    float temp = dotProduct(incomingRay.direction, info->normal);
+    temp = temp / pow(normalLength, 2);
+    for(int i = 0; i < 3; i++)
+    {
+        reflectionRay->direction[i] = info->normal[i] * temp;
+        reflectionRay->direction[i] = reflectionRay->direction[i]*2;
+        reflectionRay->direction[i] = incomingRay.direction[i] - reflectionRay->direction[i];
+    }
+
+    std::copy(std::begin(info->intersectionLocation), std::end(info->intersectionLocation), reflectionRay->origin);
+
+    //normalize vector 
+
+    float magnitude = sqrt(pow(reflectionRay->direction[X_AXIS], 2) + pow(reflectionRay->direction[Y_AXIS], 2) + pow(reflectionRay->direction[Z_AXIS], 2));
+    for(int i = 0; i < 3; i++)
+    {
+        reflectionRay->direction[i] = reflectionRay->direction[i]/magnitude;
+    }
 }

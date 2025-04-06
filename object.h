@@ -7,11 +7,22 @@
 #include "ray.h"
 #include "main.h"
 
+static int OBJECT_ID = 0;
+
+struct Material{
+    Color color;
+    float kE = 20.0; //exponent specular (size of shine)
+    float kS = 0.5; //specular constant
+    float kD = 0.5;
+    float kR = 0; // reflection constant 
+    float kT = 0; // transmission constant
+};
+
 //intersection info: location, normal, color
 struct IntersectionInfo{
     float intersectionLocation [3] = {};
     float normal [3] = {};
-    Color* color;
+    Material mat;
 };
 
 //enum of texture options for an object
@@ -25,6 +36,7 @@ enum class TextureEnum {
 
 class Object{
     public:
+        int id = OBJECT_ID++;
         int material;
         //intersection takes a pointer to info(that it fills if applicable) and ray
         //return: distance (w) of intersection or -1
@@ -36,7 +48,7 @@ class Object{
         //return: 0 on success, 1 on failure
         virtual int getTextureColor(IntersectionInfo* info);
 
-        Color color;
+        Material mat;
         enum TextureEnum texture;
         Object();
 

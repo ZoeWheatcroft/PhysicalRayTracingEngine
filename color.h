@@ -2,9 +2,9 @@
 #define COLOR_H
 #include <algorithm>
 struct Color{
-    float red;
-    float green;
-    float blue;
+    float red = 0;
+    float green = 0;
+    float blue = 0;
     void add(Color* color)
     {
         red += color->red;

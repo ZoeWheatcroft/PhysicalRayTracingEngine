@@ -38,10 +38,7 @@ int Sphere::getTextureColor(IntersectionInfo* info)
 
 float Sphere::intersect(IntersectionInfo* info, Ray ray)
 {
-	Color* color = new Color{0,0,0};
-	info->color = color;
-	*color = {255, 0, 0};
-
+	info->mat.color = {255,0,0};
     float dx = ray.direction[X_AXIS];
     float dy = ray.direction[Y_AXIS];
     float dz = ray.direction[Z_AXIS];
@@ -67,7 +64,9 @@ float Sphere::intersect(IntersectionInfo* info, Ray ray)
 	}
 
 	//calculate root
-	*color = this->color;
+	info->mat = this->mat;
+	info->mat.color = this->mat.color;
+	
 
 	float posDist = (-B+sqrt(root))/2;
 	float negDist = (-B-sqrt(root))/2;
@@ -102,11 +101,8 @@ float Sphere::intersect(IntersectionInfo* info, Ray ray)
 
 float Triangle::intersect(IntersectionInfo* info, Ray ray)
 {
-	Color* color = new Color{0,0,0};
-	info->color = color;
-	*color = {255, 0, 0};
+	info->mat.color = {255,0,0};
 
-	
 	float edge1 [3] = {0, 0, 0};
 	float edge2 [3] = {0, 0, 0};
 	float T [3] = {0,0,0};
@@ -146,8 +142,10 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	{
 		return -1;
 	}
-	*info->color = this->color;
 
+	info->mat = this->mat;
+	info->mat.color = this->mat.color;
+	
 	//calculate intersection point and store
 	info->intersectionLocation[X_AXIS] = ray.origin[X_AXIS] + ray.direction[X_AXIS]*w;
 	info->intersectionLocation[Y_AXIS] = ray.origin[Y_AXIS] + ray.direction[Y_AXIS]*w;
@@ -198,10 +196,10 @@ int Triangle::getTextureColor(IntersectionInfo *info)
 		int zMod = (int)std::floor(std::fabs(z - point0[Z_AXIS])/checkerWidth)%2;
 		if(xMod == zMod)
 		{
-			*info->color = {255, 0, 0};
+			info->mat.color = {255, 0, 0};
 		}
 		else{
-			*info->color = {255, 255, 0};
+			info->mat.color = {255, 255, 0};
 		}
 	}
 

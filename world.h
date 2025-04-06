@@ -33,6 +33,8 @@ class World{
         //return 0 on success
         int applyPhong(IntersectionInfo* info, Color* color);
 
+        void getReflectionVector(IntersectionInfo* info, Ray incomingRay, Ray* reflectionRay);
+
         //ambient light represented as a color
         //255,255,255 is pure white light
         //0,0,0 is no light

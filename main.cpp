@@ -15,7 +15,10 @@ using namespace std;
 const int W = 960;
 const int H = 540;
 
-#pragma pack(push, 1) // Ensure the struct is packed without padding
+World* world;
+int MAX_DEPTH = 10;
+
+#pragma pack(push, 1) // Ensure the struct is packed without padding0
 struct BMPHeader {
     uint16_t fileType{0x4D42};   // "BM"
     uint32_t fileSize{0};
@@ -73,15 +76,66 @@ void writePixel(int red, int green, int blue, std::ofstream* file, int x, int y)
     }
 }
 
+void illuminate(Color* color, Ray ray, int depth){
+
+    float smallestDist = -1;
+    IntersectionInfo* closestIntersection;
+    Object* closestObj;
+    for(Object* obj : world->objects)
+    {
+        IntersectionInfo* info = new struct IntersectionInfo;
+        float dist = obj->intersect(info, ray);
+        if(dist > 0.0001 && (smallestDist == -1 || dist < smallestDist)){
+            smallestDist = dist;
+            closestIntersection = info;
+            closestObj = obj;
+        }
+    }
+
+    if(smallestDist == -1)
+    {
+        *color = {100, 100, 250};
+    }
+    else{
+        //we should now theoretically have intersection
+        //update intersection info with texture color
+        closestObj->getTextureColor(closestIntersection);
+
+        //use intersection info with light to get light values
+        Color* luminance = new struct Color;
+        world->applyPhong(closestIntersection, luminance);
+        
+        // if it's reflective, does that mean it's getting the color of what it's reflecting or the light or??? 
+
+        if(depth < MAX_DEPTH)
+        {
+            //if thing intersected with is reflective 
+            if(closestIntersection->mat.kR > 0)
+            {
+                //get the reflection vector
+                Ray* reflectionRay = new Ray();
+                world->getReflectionVector(closestIntersection, ray, reflectionRay);
+                Color* reflectionColor = new Color();
+                illuminate(reflectionColor, *reflectionRay, depth + 1);
+                luminance->add(reflectionColor);
+            }
+        }
+        //tone reproduction
+        *color = closestIntersection->mat.color;
+        color->scale(luminance);
+
+    }
+}
+
 
 //255,255,255 is white and 0,0,0 is black
 int main() {
 
     std::ofstream file;
-    openBMP("output.bmp", W, H, &file); //open file and set header
+    openBMP("images/output.bmp", W, H, &file); //open file and set header
 
     Camera camera;
-    camera.viewpoint[0] = 0;
+    camera.viewpoint[0] = 1.5;
     camera.viewpoint[1] = 1;
     camera.viewpoint[2] = -6.8;
     camera.focalLength = 0.5;
@@ -90,30 +144,32 @@ int main() {
 
     //cast ray from viewpoint through pixels
 
-    Sphere* sphere1 = new Sphere(0, 1.43, -3.4, 1);
-    sphere1->color = {100, 100, 200};
-    Sphere* sphere2 = new Sphere(1.57, 1.1, -2.0, 1);
-    sphere2->color = {200, 200, 255};
+    Sphere* sphere1 = new Sphere(0, 1.43, -3.3, 1);
+    sphere1->mat.color = {0, 200, 255};
+    //sphere1->mat.kR = 1.0;
+    Sphere* sphere2 = new Sphere(2.2, 1.1, -2.0, 1);
+    sphere2->mat.color = {200, 200, 255};
+    sphere2->mat.kR = 1.0;
 
     Light* light = new Light(3, 20, -3.0, 0.5);
-    light->color = {200, 200, 200};
+    light->mat.color = {255, 255, 255};
 
     Light* light_blue = new Light(-3, 20, 3.0, 0.5);
-    light_blue->color = {0, 0, 255};
+    light_blue->mat.color = {0, 0, 255};
     
     Triangle* triangle = new Triangle();
     triangle->point0[X_AXIS] = -1.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = -8;
     triangle->point1[X_AXIS] = 2.6; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 0;
     triangle->point2[X_AXIS] = -1.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = 0;
 
-    triangle->color = {255, 100, 100};
+    triangle->mat.color = {255, 100, 100};
     triangle->texture = TextureEnum::CHECKER;
 
     Triangle* triangle2 = new Triangle();
     triangle2->point0[X_AXIS] = 2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
     triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 0;
     triangle2->point2[X_AXIS] = -1.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
-    triangle2->color = {255, 100, 100};
+    triangle2->mat.color = {255, 100, 100};
     triangle2->texture = TextureEnum::CHECKER;
 
     //fun test for sea urchin wizard 
@@ -121,26 +177,21 @@ int main() {
     spike->point0[X_AXIS] = 1,57; spike->point0[Y_AXIS] = 2; spike->point0[Z_AXIS] = -3;
     spike->point1[X_AXIS] = -1.0; spike->point1[Y_AXIS] = 2; spike->point1[Z_AXIS] = -3;
     spike->point2[X_AXIS] = 0; spike->point2[Y_AXIS] = 4; spike->point2[Z_AXIS] = -3;
-    spike->color = {255, 255, 0};
-
-    std::vector<Object*> objects;
-    objects.push_back(sphere1);
-    objects.push_back(sphere2);
-    objects.push_back(triangle);
-    objects.push_back(triangle2);
-    //objects.push_back(spike);
+    spike->mat.color = {255, 255, 0};
 
     //add everything into the world
-    World* world = new World();
+    world = new World();
     world->addObject(sphere1);
     world->addObject(sphere2);
     world->addObject(triangle2);
     world->addObject(triangle);
 
     world->addLight(light);
-    world->addLight(light_blue);
+    //world->addLight(light_blue);
 
     world->camera = &camera;
+
+    world->objects[0]->mat;
 
     for(int y = 0; y < H; y++)
     {
@@ -159,7 +210,7 @@ int main() {
             float pixelY = camera.viewpoint[Y_AXIS] + camera.height/2 - pixelHeight*y - pixelHeight/2;
             float dir [3] = {pixelX - ray.origin[X_AXIS], pixelY - ray.origin[Y_AXIS], camera.viewpoint[Z_AXIS]  + camera.focalLength - camera.viewpoint[Z_AXIS]};
 
-            //normalize the direction
+                //normalize the direction
             float magnitude = sqrt(pow(dir[X_AXIS], 2) + pow(dir[Y_AXIS], 2) + pow(dir[Z_AXIS], 2));
             for(int i = 0; i < 3; i++)
             {
@@ -167,36 +218,7 @@ int main() {
             }
             std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
 
-            float smallestDist = -1;
-            IntersectionInfo* closestIntersection;
-            Object* closestObj;
-            for(Object* obj : objects)
-            {
-                IntersectionInfo* info = new struct IntersectionInfo;
-                float dist = obj->intersect(info, ray);
-                if(dist != -1 && (smallestDist == -1 || dist < smallestDist)){
-                    smallestDist = dist;
-                    closestIntersection = info;
-                    closestObj = obj;
-                }
-            }
-
-            if(smallestDist == -1)
-            {
-                *color = {10, 10, 50};
-            }
-            else{
-                //we should now theoretically have intersection
-                //update intersection info with texture color
-                closestObj->getTextureColor(closestIntersection);
-
-                //use intersection info with light to get light values
-                Color* luminance = new struct Color;
-                world->applyPhong(closestIntersection, luminance);
-                //tone reproduction
-                *color = *closestIntersection->color;
-                color->scale(luminance);
-            }
+            illuminate(color, ray, 0);
 
             writePixel(((int)color->red)%256, ((int)color->green)%256, ((int)color->blue)%256, &file, x, y);
         }
