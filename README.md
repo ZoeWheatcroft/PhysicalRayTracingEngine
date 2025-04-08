@@ -4,6 +4,10 @@ C++ physics based ray tracing engine-- in progress!
 
 code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
 
+**Reflection**
+
+![image](https://github.com/user-attachments/assets/e5afe800-7143-4cfc-b5ff-61c73fc7697c)
+
 **Procedural Textures**
 
 ![procedural_textures](https://github.com/user-attachments/assets/f7231305-6b10-4ce0-a0ff-70f257a74dbe)
