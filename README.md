@@ -1,26 +1,35 @@
+# Table of Contents
+
+- [Basic Milestones](#Basic-Milestones)
+- [Extra Additions](#Extra-Additions)
+
+# Summary
+
 Devs: Zoe Wheatcroft
 
 C++ physics based ray tracing engine-- in progress! 
 
 code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
 
-**Reflection**
+# Basic Milestones
+
+## **Reflection**
 
 ![image](https://github.com/user-attachments/assets/e5afe800-7143-4cfc-b5ff-61c73fc7697c)
 
-**Procedural Textures**
+## **Procedural Textures**
 
 ![procedural_textures](https://github.com/user-attachments/assets/f7231305-6b10-4ce0-a0ff-70f257a74dbe)
 
-**Phong Lighting**
+## **Phong Lighting**
 
 ![phong](https://github.com/user-attachments/assets/0653795e-fc79-44c3-ac03-f7c4ba787570)
 
-**Basic Image!**
+## **Basic Image!**
 
 ![ray_tracing](https://github.com/user-attachments/assets/7dae40e3-2d98-4a6e-b61d-a653d7fc7eff)
 
-**Setting the Scene**
+## **Setting the Scene**
 
 Here is my Blender recreation of Whitted's sample scene: 
 ![image](https://github.com/user-attachments/assets/6b49ea53-3ef2-499a-972b-2f8d33353361)
@@ -41,3 +50,15 @@ Here are its measurements (location in x,y,z format, y-up is positive):
   * virtual viewpoint: (0, 1, -7.8)
   * rotation: (0, 0, 0)
 
+
+
+
+# Extra Additions
+
+## **Supersampling**
+
+With the supersampling (4 rays per pixel):
+![image](https://github.com/user-attachments/assets/c44b8178-c843-4e07-b3ae-43fc48b14d21)
+
+Without the supersampling:
+![image](https://github.com/user-attachments/assets/4c5103e6-6461-4256-a027-cc28b3f59bf7)
