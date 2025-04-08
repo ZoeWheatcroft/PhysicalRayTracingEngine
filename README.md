@@ -1,7 +1,7 @@
 # Table of Contents
 
-- [Basic Milestones](#Basic-Milestones)
-- [Extra Additions](#Extra-Additions)
+- [Basic Milestones](#basic-milestones)
+- [Extra Additions](#extra-additions)
 
 # Summary
 
