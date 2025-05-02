@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "color.h"
+#include "math.h"
 #include "ray.h"
 #include "main.h"
 
@@ -11,7 +12,7 @@ static int OBJECT_ID = 0;
 
 struct Material{
     Color color;
-    float kE = 20.0; //exponent specular (size of shine)
+    float kE = 10.0; //exponent specular (size of shine)
     float kS = 0.5; //specular constant
     float kD = 0.5;
     float kR = 0; // reflection constant 
@@ -87,8 +88,6 @@ class Triangle : public Object{
         float point1 [3] = {};
         float point2 [3] = {};
 
-
-        float cross(float a [3], float b [3]);
 };
 
 

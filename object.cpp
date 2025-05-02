@@ -17,6 +17,10 @@ Object::Object()
     //printf("constructed obj"); 
 }
 
+Object::~Object()
+{
+}
+
 Sphere::Sphere(float x, float y, float z, float radius)
 {
 	center[X_AXIS] = x;
@@ -110,6 +114,7 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	float T [3] = {0,0,0};
 	float P [3] = {0,0,0};
 	float Q [3] = {0,0,0};
+	float N [3] = {0,0,0}; //normal
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -119,26 +124,41 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	}
 
 	// P = cross product D x e2
-	P[0] = ray.direction[1]*edge2[2] - ray.direction[2]*edge2[1];
-	P[1] = ray.direction[2]*edge2[0] - ray.direction[0]*edge2[2];
-	P[2] = ray.direction[0]*edge2[1] - ray.direction[1]*edge2[0];
+
+	crossProduct(ray.direction, edge2, P);
 
 	//cross product T and e1
-	Q[0] = T[1]*edge1[2] - T[2]*edge1[1];
-	Q[1] = T[2]*edge1[0] - T[0]*edge1[2];
-	Q[2] = T[0]*edge1[1] - T[1]*edge1[0];
+	crossProduct(T, edge1, Q);
+	
+	crossProduct(edge2, edge1, info->normal);
+
+	//normalize normal
+	float normalMag = sqrt(pow(info->normal[X_AXIS], 2) + pow(info->normal[Y_AXIS], 2) + pow(info->normal[Z_AXIS], 2));
+	for(int i = 0; i < 3; i++)
+	{
+		float x = info->normal[i]/normalMag;
+		info->normal[i] = info->normal[i]/normalMag;
+	}
+
+
+	//TODO normal calculation
+	// info->normal[0] = 0;
+	// info->normal[1] = 1;
+	// info->normal[2] = 0;
+	
+	
 
 	//denominator
-	float denominator = cross(P, edge1);
+	float denominator = dotProduct(P, edge1);
 
 	if(denominator == 0)
 	{
 		return -1;
 	}
 
-	float w = cross(Q, edge2)/denominator;
-	float u = cross(P, T)/denominator;
-	float v = cross(Q, ray.direction)/denominator;
+	float w = dotProduct(Q, edge2)/denominator;
+	float u = dotProduct(P, T)/denominator;
+	float v = dotProduct(Q, ray.direction)/denominator;
 
 	if(u < 0 || v < 0 || u + v > 1)
 	{
@@ -153,11 +173,6 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	info->intersectionLocation[Y_AXIS] = ray.origin[Y_AXIS] + ray.direction[Y_AXIS]*w;
 	info->intersectionLocation[Z_AXIS] = ray.origin[Z_AXIS] + ray.direction[Z_AXIS]*w;
 	
-	//TODO normal calculation
-	info->normal[0] = 0;
-	info->normal[1] = 1;
-	info->normal[2] = 0;
-
 	info->id = this->id;
 
 	return w;
@@ -208,18 +223,6 @@ int Triangle::getTextureColor(IntersectionInfo *info)
 	}
 
     return 0;
-}
-
-//this is not a cross product
-//this is dot product
-float Triangle::cross(float a [3], float b [3])
-{
-	float result = 0;
-	for(int i = 0; i < 3; i++)
-	{
-		result = result + a[i]*b[i];
-	}
-	return result;
 }
 
 Light::Light(float x, float y, float z, float radius)

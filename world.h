@@ -4,8 +4,11 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <typeinfo>
+#include <cfloat>
 
 #include "object.h"
+#include "bounding_box.h"
 #include "camera.h"
 #include "math.h"
 
@@ -17,6 +20,8 @@ class World{
         std::vector<Object*> objects;
         // all the lights in the world
         std::vector<Light*> lights;
+        //  the root bound box in the world-- important for k-d trees
+        BoundingBox* rootBox;
         //the camera for the world
         Camera* camera;
 
@@ -39,6 +44,11 @@ class World{
         //255,255,255 is pure white light
         //0,0,0 is no light
         Color* ambientLight;
+
+        //deploy shibari-- put all objects into bounding boxes
+        void boxAllObjects();
+        BoundingBox* recursiveBuildBVH(std::vector<BoundingBox*> boxes, int axis);
+
 
         World();
 

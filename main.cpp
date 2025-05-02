@@ -3,6 +3,7 @@
 #include <vector>
 #include <ctime>
 #include <cmath>
+#include <queue>
 
 #include "main.h"
 #include "world.h"
@@ -16,7 +17,11 @@ const int W = 960;
 const int H = 540;
 
 World* world;
-int MAX_DEPTH = 5;
+int MAX_DEPTH = 4;
+
+int SUPER_SAMPLING = 0;
+
+int USE_BOUNDING = 1;
 
 #pragma pack(push, 1) // Ensure the struct is packed without padding0
 struct BMPHeader {
@@ -76,19 +81,66 @@ void writePixel(int red, int green, int blue, std::ofstream* file, int x, int y)
     }
 }
 
+int getIntersectionsInAABB(Ray* ray, vector<Object*>* intersectingObjects){
+    // get child boxes that we intersect with 
+    // get children of children boxes that we are intersecing with 
+    // if not intersecting, return 
+    queue<BoundingBox*> queue;
+    queue.push(world->rootBox);
+
+    int s = 0;
+
+    while(!queue.empty()){
+        //get current box from front of queue 
+        BoundingBox* box = queue.front();
+        queue.pop();
+        //check if box intersects with ray
+        if(box->intersect(ray))
+        {
+            // if it contains no boxes, it just contains an object-- add object and return 
+            if(box->childBoxes.size() == 0){
+                intersectingObjects->push_back(box->childObject);
+                s += 1;
+            }
+            else{
+                // add all child boxes to queue 
+                for(BoundingBox* b : box->childBoxes){
+                    queue.push(b);
+                }
+            }
+        }
+    }
+    return s;
+}
+
 void illuminate(Color* color, Ray ray, int depth){
 
     float smallestDist = -1;
     IntersectionInfo* closestIntersection;
-    Object* closestObj;
-    for(Object* obj : world->objects)
+
+    //objects in range of ray
+    //either all objects in world, or objects within ray-intersecting boxes
+    vector<Object*> objectsInRange;
+    if(USE_BOUNDING)
+    {
+        int s = getIntersectionsInAABB(&ray, &objectsInRange);
+    }
+    else{
+        objectsInRange = world->objects;
+    }
+
+    for(Object* obj : objectsInRange)
     {
         IntersectionInfo* info = new struct IntersectionInfo;
         float dist = obj->intersect(info, ray);
         if(dist > 0.0001 && (smallestDist == -1 || dist < smallestDist)){
             smallestDist = dist;
+            delete closestIntersection;
             closestIntersection = info;
-            closestObj = obj;
+            obj->getTextureColor(closestIntersection);
+        }
+        else{
+            delete info;
         }
     }
 
@@ -99,7 +151,6 @@ void illuminate(Color* color, Ray ray, int depth){
     else{
         //we should now theoretically have intersection
         //update intersection info with texture color
-        closestObj->getTextureColor(closestIntersection);
 
         //use intersection info with light to get light values
         Color* luminance = new struct Color;
@@ -117,16 +168,22 @@ void illuminate(Color* color, Ray ray, int depth){
                 world->getReflectionVector(closestIntersection, ray, reflectionRay);
                 Color* reflectionColor = new Color();
                 illuminate(reflectionColor, *reflectionRay, depth + 1);
+                reflectionColor->scale(closestIntersection->mat.kR);
                 luminance->add(reflectionColor);
+                
+                delete reflectionColor;
+                delete reflectionRay;
             }
         }
         //tone reproduction
         *color = closestIntersection->mat.color;
         color->scale(luminance);
 
+        delete luminance;
     }
-}
 
+    delete closestIntersection;
+}
 
 //255,255,255 is white and 0,0,0 is black
 int main() {
@@ -135,7 +192,7 @@ int main() {
     openBMP("images/output.bmp", W, H, &file); //open file and set header
 
     Camera camera;
-    camera.viewpoint[0] = 1.5;
+    camera.viewpoint[0] = 0;
     camera.viewpoint[1] = 1;
     camera.viewpoint[2] = -6.8;
     camera.focalLength = 0.5;
@@ -144,23 +201,24 @@ int main() {
 
     //cast ray from viewpoint through pixels
 
-    Sphere* sphere1 = new Sphere(0, 1.43, -3.3, 1);
-    sphere1->mat.color = {0, 200, 255};
-    //sphere1->mat.kR = 1.0;
-    Sphere* sphere2 = new Sphere(2.2, 1.1, -2.0, 1);
-    sphere2->mat.color = {200, 200, 255};
+    Sphere* sphere1 = new Sphere(0, 1.3, -3.4, 1);
+    sphere1->mat.color = {0, 100, 255};
+    sphere1->mat.kR = 0;
+    sphere1->mat.kE = 50.0;
+    Sphere* sphere2 = new Sphere(1.57, 0.9, -3.0, 0.6);
+    sphere2->mat.color = {255, 255, 255};
     sphere2->mat.kR = 1.0;
 
-    Light* light = new Light(3, 20, -3.0, 0.5);
+    Light* light = new Light(1, 10, -5.0, 0.5);
     light->mat.color = {255, 255, 255};
 
     Light* light_blue = new Light(-3, 20, 3.0, 0.5);
     light_blue->mat.color = {0, 0, 255};
     
     Triangle* triangle = new Triangle();
-    triangle->point0[X_AXIS] = -1.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = -8;
+    triangle->point0[X_AXIS] = -2.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = -8;
     triangle->point1[X_AXIS] = 2.6; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 0;
-    triangle->point2[X_AXIS] = -1.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = 0;
+    triangle->point2[X_AXIS] = -2.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = 0;
 
     triangle->mat.color = {255, 100, 100};
     triangle->texture = TextureEnum::CHECKER;
@@ -168,14 +226,14 @@ int main() {
     Triangle* triangle2 = new Triangle();
     triangle2->point0[X_AXIS] = 2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
     triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 0;
-    triangle2->point2[X_AXIS] = -1.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
+    triangle2->point2[X_AXIS] = -2.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
     triangle2->mat.color = {255, 100, 100};
     triangle2->texture = TextureEnum::CHECKER;
 
     //fun test for sea urchin wizard 
     Triangle* spike = new Triangle();
     spike->point0[X_AXIS] = 1,57; spike->point0[Y_AXIS] = 2; spike->point0[Z_AXIS] = -3;
-    spike->point1[X_AXIS] = -1.0; spike->point1[Y_AXIS] = 2; spike->point1[Z_AXIS] = -3;
+    spike->point1[X_AXIS] = -2.0; spike->point1[Y_AXIS] = 2; spike->point1[Z_AXIS] = -3;
     spike->point2[X_AXIS] = 0; spike->point2[Y_AXIS] = 4; spike->point2[Z_AXIS] = -3;
     spike->mat.color = {255, 255, 0};
 
@@ -191,7 +249,10 @@ int main() {
 
     world->camera = &camera;
 
-    world->objects[0]->mat;
+    // if using bounding for intersection detection, construct axis-aligned bounding boxes (AABB)
+    if(USE_BOUNDING){
+        world->boxAllObjects();
+    }
 
     for(int y = 0; y < H; y++)
     {
@@ -204,23 +265,55 @@ int main() {
             std::copy(std::begin(camera.viewpoint), std::end(camera.viewpoint), std::begin(ray.origin));
             //calculate normalized direction
             float pixelWidth = camera.width/W; 
-            float pixelHeight = camera.height/H;
-            //pixel location = center of camera - width/2 (far left) + pixelWidth*x + pixelWidth/2(to center in middle of pixel)
-            float pixelX = camera.viewpoint[X_AXIS] - camera.width/2 + pixelWidth*x + pixelWidth/2;
-            float pixelY = camera.viewpoint[Y_AXIS] + camera.height/2 - pixelHeight*y - pixelHeight/2;
-            float dir [3] = {pixelX - ray.origin[X_AXIS], pixelY - ray.origin[Y_AXIS], camera.viewpoint[Z_AXIS]  + camera.focalLength - camera.viewpoint[Z_AXIS]};
+            float pixelHeight = camera.height/H;   
 
-                //normalize the direction
-            float magnitude = sqrt(pow(dir[X_AXIS], 2) + pow(dir[Y_AXIS], 2) + pow(dir[Z_AXIS], 2));
-            for(int i = 0; i < 3; i++)
+            if(!SUPER_SAMPLING)
             {
-                dir[i] = dir[i]/magnitude;
+                //pixel location = center of camera - width/2 (far left) + pixelWidth*x + pixelWidth/2(to center in middle of pixel)
+                float pixelX = camera.viewpoint[X_AXIS] - camera.width/2 + pixelWidth*x + pixelWidth/2;
+                float pixelY = camera.viewpoint[Y_AXIS] + camera.height/2 - pixelHeight*y - pixelHeight/2;
+                float dir [3] = {pixelX - ray.origin[X_AXIS], pixelY - ray.origin[Y_AXIS], camera.viewpoint[Z_AXIS]  + camera.focalLength - camera.viewpoint[Z_AXIS]};
+    
+                    //normalize the direction
+                float magnitude = sqrt(pow(dir[X_AXIS], 2) + pow(dir[Y_AXIS], 2) + pow(dir[Z_AXIS], 2));
+                for(int i = 0; i < 3; i++)
+                {
+                    dir[i] = dir[i]/magnitude;
+                }
+                std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
+    
+                illuminate(color, ray, 0);
             }
-            std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
+            else
+            {
+                Color* accumulateColor = new Color(); //add all the colors of the four quarters of the pixel, will be divided later
+                // do 4 rays by dividing pixel into four quarters
+                for(int s = 0; s < 4; s++)
+                {
+                    *color = {0,0,0}; 
+                    //pixel location = center of camera - width/2 (far left) + pixelWidth*x + pixelWidth/2(to center in middle of pixel)
+                    float pixelX = camera.viewpoint[X_AXIS] - camera.width/2 + pixelWidth*x + (pixelWidth/4)*(s%2); 
+                    float pixelY = camera.viewpoint[Y_AXIS] + camera.height/2 - pixelHeight*y - pixelHeight/2*((s/2)%2);
+                    float dir [3] = {pixelX - ray.origin[X_AXIS], pixelY - ray.origin[Y_AXIS], camera.viewpoint[Z_AXIS]  + camera.focalLength - camera.viewpoint[Z_AXIS]};
+        
+                        //normalize the direction
+                    float magnitude = sqrt(pow(dir[X_AXIS], 2) + pow(dir[Y_AXIS], 2) + pow(dir[Z_AXIS], 2));
+                    for(int i = 0; i < 3; i++)
+                    {
+                        dir[i] = dir[i]/magnitude;
+                    }
+                    std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
+        
+                    illuminate(color, ray, 0);
+                    accumulateColor->add(color);
+                }
+                accumulateColor->scale(0.25);
+                *color = *accumulateColor;
+                delete accumulateColor;
+            }
 
-            illuminate(color, ray, 0);
-
-            writePixel(((int)color->red)%256, ((int)color->green)%256, ((int)color->blue)%256, &file, x, y);
+            writePixel(std::min(((int)color->red), 255), std::min((int)color->green, 255), std::min((int)color->blue, 255), &file, x, y);
+            delete color;
         }
     }
 

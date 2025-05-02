@@ -1,17 +1,230 @@
 #include "world.h"
 
-#include <iostream>
-#include <typeinfo>
+
 
 void World::test()
 {
     printf("\nWorld is active and up! Big win!");
 }
 
+void World::boxAllObjects()
+{
+    //to do-- remove 
+    float rootMin [3] ={-FLT_MAX, -FLT_MAX, -FLT_MAX};
+    float rootMax [3] ={FLT_MAX, FLT_MAX, FLT_MAX};
+
+    rootBox = new BoundingBox(rootMin, rootMax);
+
+    std::vector<BoundingBox*> boxes;
+    float t [3] = {1,2,3};
+    BoundingBox* test = new BoundingBox(t, t);
+    boxes.push_back(test);
+
+    //construct all boxes 
+    for(Object* obj : objects){
+        // for each point, find min/max to encapsulate
+        float min[3] = {0,0,0};
+        float max[3] = {0,0,0};
+
+        if(Triangle* tri = dynamic_cast<Triangle*>(obj)){            
+            std::copy(std::begin(tri->point0), std::end(tri->point0), std::begin(min));
+            std::copy(std::begin(tri->point0), std::end(tri->point0), std::begin(max));
+            for(int i = 0; i < 3; i++){
+                if(tri->point1[i] < min[i]){
+                    min[i] = tri->point1[i];
+                }
+                if(tri->point2[i] < min[i])
+                {
+                    min[i] = tri->point2[i];
+                }
+
+                if(tri->point1[i] > max[i]){
+                    max[i] = tri->point1[i];
+                }
+                if(tri->point2[i] > max[i])
+                {
+                    max[i] = tri->point2[i];
+                }
+            }
+        }
+        else if(Sphere* sp = dynamic_cast<Sphere*>(obj)){
+            std::copy(std::begin(sp->center), std::end(sp->center), std::begin(min));
+            std::copy(std::begin(sp->center), std::end(sp->center), std::begin(max));
+
+            for(int i = 0; i < 3; i++)
+            {
+                min[i] = sp->center[i] - sp->radius;
+                max[i] = sp->center[i] + sp->radius;
+            }
+        }
+        else{
+            continue;
+        }
+        BoundingBox* box = new BoundingBox(min, max);
+        box->childObject = obj;
+    
+        boxes.push_back(box);
+    }
+
+    //while boxes in boxes
+    rootBox = recursiveBuildBVH(boxes, 0);
+}
+
+/**
+ * 
+BoundingBox* World::recursiveBuildBVH(std::vector<BoundingBox*> boxes, int axis) {
+    if (boxes.empty()) return nullptr;
+    if (boxes.size() == 1) return boxes[0];
+
+    sort(boxes.begin(), boxes.end(), [axis](BoundingBox* a, BoundingBox* b) {
+        return a->boundMin[axis] < b->boundMin[axis];
+    });
+
+    size_t mid = boxes.size() / 2;
+    float split = boxes[mid]->boundMin[axis];
+
+    std::vector<BoundingBox*> left, right;
+
+    //for anything that straddles the split, we will add it to the left and update the left's max to reflect this
+    //this will lead to some overlapping BUT will create a nicer split 
+    float left_max = 0;
+    for (BoundingBox* box : boxes) {
+        if (box->boundMax[axis] <= split) {
+            left.push_back(box);
+            if(left_max < box->boundMin[axis]){
+                left_max = box->boundMax[axis];
+            }
+        } else if (box->boundMin[axis] >= split) {
+            right.push_back(box);
+        } else {
+            left.push_back(box);
+            if(left_max < box->boundMin[axis]){
+                left_max = box->boundMin[axis];
+            }
+        }
+    }
+
+    BoundingBox* leftNode = recursiveBuildBVH(left, (axis + 1) % 3);
+    BoundingBox* rightNode = recursiveBuildBVH(right, (axis + 1) % 3);
+
+    float newMin[3], newMax[3];
+
+    if(leftNode != nullptr && rightNode != nullptr){
+        for (int i = 0; i < 3; ++i) {
+            newMin[i] = leftNode->boundMin[axis];
+            newMax[i] = std::max(left_max, rightNode->boundMax[i]);
+        }
+    }
+    else if(leftNode != nullptr)
+    {
+        for (int i = 0; i < 3; ++i) {
+            newMin[i] = leftNode->boundMin[i];
+            newMax[i] = leftNode->boundMax[i];
+        }
+    }
+    else if (rightNode != nullptr){
+        for(int i = 0; i < 3; i++){
+            newMin[i] = rightNode->boundMin[i];
+            newMax[i] = rightNode->boundMax[i];
+        }
+    }
+
+    BoundingBox* parent = new BoundingBox(newMin, newMax);
+    if (leftNode) parent->addBox(leftNode);
+    if (rightNode) parent->addBox(rightNode);
+
+    return parent;
+}  
+*/
+
+BoundingBox* World::recursiveBuildBVH(std::vector<BoundingBox*> boxes, int axis) {
+
+    std::vector<BoundingBox*> children;
+    
+
+    //if more than 2 children, sort those children into boxes 
+    if(boxes.size() > 2){
+        int pivot = boxes.size()/2; //where we split the boxes
+
+        //sort the boxes by the axis 
+        sort(boxes.begin(), boxes.end(), [axis](BoundingBox* a, BoundingBox* b) {
+            return a->center[axis] < b->center[axis];
+        });
+    
+        std::vector<BoundingBox*> minBoxes; 
+        std::vector<BoundingBox*> maxBoxes; 
+        //get all bottom chunks and put into list 
+        for(int i = 0; i < boxes.size(); i++){
+            if(i < pivot){
+                minBoxes.push_back(boxes[i]);
+            }
+            else{
+                maxBoxes.push_back(boxes[i]);
+            }
+        }
+        
+        //if min and max groups are bigger than 1, recurse
+        //else, they are just children of current box 
+        if(minBoxes.size() > 1){
+            BoundingBox* minChildBox = recursiveBuildBVH(minBoxes, axis += 1);
+            children.push_back(minChildBox);
+        }
+        else if (minBoxes.size() == 1){
+            children.push_back(minBoxes[0]);
+        }
+
+        if(maxBoxes.size() > 1){
+            BoundingBox* maxChildBox = recursiveBuildBVH(maxBoxes, axis+=1);
+            children.push_back(maxChildBox);
+        }
+        else if(maxBoxes.size() == 1){
+            children.push_back(maxBoxes[0]);
+        }
+    }
+    else
+    {
+        for(BoundingBox* b : boxes)
+        {
+            children.push_back(b);
+        }
+    }
+
+    //find min/max from children 
+    //find the min/max of everything
+    float min [3] = {};
+    float max [3] = {};
+
+    std::copy(std::begin(children[0]->boundMin), std::end(children[0]->boundMin), min);
+    std::copy(std::begin(children[0]->boundMax), std::end(children[0]->boundMax), max);
+
+    for(BoundingBox* b : children)
+    {
+        for(int j = 0; j < 3; j++){
+            if(b->boundMin[j] < min[j]){
+                min[j] = b->boundMin[j];
+            }
+            if(b->boundMax[j] > max[j]){
+                max[j] = b->boundMax[j];
+            }
+        }
+    }
+
+    //create this bounding box! 
+    BoundingBox* thisBox = new BoundingBox(min, max);
+    for(BoundingBox* b : children)
+    {
+        thisBox->addBox(b);
+    }
+
+    //return this bounding box 
+    return thisBox;
+
+}
+
 World::World()
 {
     ambientLight = new Color();
-    *ambientLight = {25, 25, 25};;
+    *ambientLight = {80, 80, 80};;
 }
 
 int World::addObject(Object* obj)
@@ -19,7 +232,7 @@ int World::addObject(Object* obj)
 
     objects.push_back(obj);
 
-    return 0;
+    return 1;
 }
 
 int World::addLight(Light* light)
@@ -64,12 +277,12 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         std::copy(std::begin(dir), std::end(dir), std::begin(ray.direction));
 
         //check if light is blocked
-        IntersectionInfo* lightIntersection = new struct IntersectionInfo;
         int lightBlocked = 0; 
         for(Object* obj : objects)
         {
             IntersectionInfo* lightInfo = new struct IntersectionInfo;
             float dist = obj->intersect(lightInfo, ray);
+            delete lightInfo;
             if(dist != 1 && dist > 0){
                 const char* type = typeid(*obj).name();
                 lightBlocked = 1;
@@ -84,7 +297,6 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         //now we know that we can actually see the light!!
 
         //get dir of s (incoming light direction)
-
         float intersection [3] = {0,0,0};
         std::copy(std::begin(info->intersectionLocation), std::end(info->intersectionLocation), std::begin(intersection));
         float incomingLightDir [3] = {light->center[X_AXIS] - intersection[X_AXIS], light->center[Y_AXIS]-intersection[Y_AXIS] , light->center[Z_AXIS]-intersection[Z_AXIS]};
@@ -115,6 +327,8 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         color->blue = color->blue*normal_incoming_cross;
 
         L->add(color);
+
+        delete color;
 
         //calculate refelction vector
         float reflectionVector [3] = {};
@@ -154,6 +368,8 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
 
         //add diffuse
         L->add(specColor);
+
+        delete specColor;
 
         if(L->red < 0 || L->blue < 0 || L->green < 0)
         {
