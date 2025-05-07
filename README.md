@@ -2,6 +2,8 @@
 
 - [Basic Milestones](#basic-milestones)
 - [Extra Additions](#extra-additions)
+- K-D Tree
+- Super Sampling
 
 # Summary
 
@@ -54,6 +56,12 @@ Here are its measurements (location in x,y,z format, y-up is positive):
 
 
 # Extra Additions
+
+## **K-D Tree**
+![tiny_bunny_kdtree](https://github.com/user-attachments/assets/8e254bec-79f9-4b21-81a1-9e5e3e1680ea)
+
+Above is the Stanford Bunny in my ray tracer. With this version of the bunny, there are 948 faces and 453 vertices. With the K-D tree, the entire image took just about 200 seconds to render. WIthout the k-d tree, it took almost 500. What a testament to the necessity of the k-d tree for high poly scenes!
+
 
 ## **Supersampling**
 
