@@ -4,12 +4,14 @@
 #include <ctime>
 #include <cmath>
 #include <queue>
+#include <chrono>
 
 #include "main.h"
 #include "world.h"
 #include "object.h"
 #include "camera.h"
 #include "math.h"
+#include "asset_loader.h"
 
 using namespace std;
 
@@ -174,6 +176,19 @@ void illuminate(Color* color, Ray ray, int depth){
                 delete reflectionColor;
                 delete reflectionRay;
             }
+            if(closestIntersection->mat.kT > 0)
+            {
+                //get the transmission vector
+                Ray* transmissionRay = new Ray();
+                world->getTransmissionVector(closestIntersection, ray, transmissionRay);
+                Color* transmissionColor = new Color();
+                illuminate(transmissionColor, *transmissionRay, depth + 1);
+                transmissionColor->scale(closestIntersection->mat.kT);
+                luminance->add(transmissionColor);
+                
+                delete transmissionColor;
+                delete transmissionRay;
+            }
         }
         //tone reproduction
         *color = closestIntersection->mat.color;
@@ -185,11 +200,96 @@ void illuminate(Color* color, Ray ray, int depth){
     delete closestIntersection;
 }
 
+void makeWhittedObjects(){
+    Sphere* sphere1 = new Sphere(0, 0.9, -4.0, 0.8);
+    sphere1->mat.color = {50, 50, 255};
+    sphere1->mat.kR = 0;
+    sphere1->mat.kE = 200.0;
+    sphere1->mat.kS = 0.5;
+    sphere1->mat.kD = 0.5;
+    sphere1->mat.kT = 0;
+
+    Sphere* sphere2 = new Sphere(1.27, 0.7, -3.3, 0.6);
+    sphere2->mat.color = {255, 255, 255};
+    sphere2->mat.kR = 1.0;
+
+    Light* light_blue = new Light(-3, 20, 3.0, 0.5);
+    light_blue->mat.color = {0, 0, 255};
+    
+    Triangle* triangle = new Triangle();
+    // Original: point0 → point1 → point2 (CW)
+    // New: point0 → point2 → point1 (CCW)
+    triangle->point0[X_AXIS] = -1.8; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = -8;
+    triangle->point1[X_AXIS] = -1.8; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 0;
+    triangle->point2[X_AXIS] =  2.6; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = 0;
+    triangle->mat.color = {255, 100, 100};
+    triangle->texture = TextureEnum::CHECKER;
+    
+    Triangle* triangle2 = new Triangle();
+    // Original: point0 → point1 → point2 (CW)
+    // New: point0 → point2 → point1 (CCW)
+    triangle2->point0[X_AXIS] =  2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
+    triangle2->point1[X_AXIS] = -1.8; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = -8;
+    triangle2->point2[X_AXIS] =  2.6; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] =  0;
+    triangle2->mat.color = {255, 100, 100};
+    triangle2->texture = TextureEnum::CHECKER;
+
+    //add everything into the world
+    world->addObject(sphere1);
+    world->addObject(sphere2);
+    world->addObject(triangle2);
+    world->addObject(triangle);
+    //world->addLight(light_blue);
+}
+
+void makeTestSpheres(){
+    //make test spheres
+    Sphere* sphere3 = new Sphere(-0.03, 0.12, 0.004, 0.3);
+    sphere3->mat.color = {255, 100, 0};
+    Sphere* sphere4 = new Sphere(-1.5, 1, -3, 0.3);
+    sphere4->mat.color = {0, 100, 255};
+    Sphere* sphere5 = new Sphere(-2, 1, -3, 0.3);
+    sphere5->mat.color = {0, 100, 255};
+
+    //add test spheres 
+    world->addObject(sphere3);
+    world->addObject(sphere4);
+    world->addObject(sphere5);
+}
+
+void bunnyTestTriangle(){
+    // bunny test triangle
+    Triangle* tri = new Triangle();
+
+    // Line 1: -0.0378297 0.12794 0.00447467 0.850855 0.5
+    tri->point0[X_AXIS] = -0.0378297f;
+    tri->point0[Y_AXIS] =  0.12794f;
+    tri->point0[Z_AXIS] =  0.00447467f;
+    
+    // Line 2: -0.0447794 0.128887 0.00190497 0.900159 0.5
+    tri->point1[X_AXIS] = -0.0447794f;
+    tri->point1[Y_AXIS] =  0.128887f;
+    tri->point1[Z_AXIS] =  0.00190497f;
+    
+    // Line 3: -0.0680095 0.151244 0.0371953 0.398443 0.5
+    tri->point2[X_AXIS] = -0.0680095f;
+    tri->point2[Y_AXIS] =  0.151244f;
+    tri->point2[Z_AXIS] =  0.0371953f;
+    
+    // Set color (yellow)
+    tri->mat.color = {255, 255, 0};
+    
+    // Add to world
+    world->addObject(tri);
+}
+
 //255,255,255 is white and 0,0,0 is black
 int main() {
 
     std::ofstream file;
     openBMP("images/output.bmp", W, H, &file); //open file and set header
+    
+    world = new World();
 
     Camera camera;
     camera.viewpoint[0] = 0;
@@ -199,36 +299,29 @@ int main() {
     camera.width = 1;
     camera.height = 0.5625;
 
-    //cast ray from viewpoint through pixels
-
-    Sphere* sphere1 = new Sphere(0, 1.3, -3.4, 1);
-    sphere1->mat.color = {0, 100, 255};
-    sphere1->mat.kR = 0;
-    sphere1->mat.kE = 50.0;
-    Sphere* sphere2 = new Sphere(1.57, 0.9, -3.0, 0.6);
-    sphere2->mat.color = {255, 255, 255};
-    sphere2->mat.kR = 1.0;
-
-    Light* light = new Light(1, 10, -5.0, 0.5);
+    Light* light = new Light(10, 10, -5.0, 0.5);
     light->mat.color = {255, 255, 255};
+    world->addLight(light);
 
-    Light* light_blue = new Light(-3, 20, 3.0, 0.5);
-    light_blue->mat.color = {0, 0, 255};
-    
-    Triangle* triangle = new Triangle();
-    triangle->point0[X_AXIS] = -2.0; triangle->point0[Y_AXIS] = 0; triangle->point0[Z_AXIS] = -8;
-    triangle->point1[X_AXIS] = 2.6; triangle->point1[Y_AXIS] = 0; triangle->point1[Z_AXIS] = 0;
-    triangle->point2[X_AXIS] = -2.0; triangle->point2[Y_AXIS] = 0; triangle->point2[Z_AXIS] = 0;
+    Light* light2 = new Light(-10, 10, -5.0, 0.5);
+    light2->mat.color = {255, 0, 100};
+    //world->addLight(light2);
 
-    triangle->mat.color = {255, 100, 100};
-    triangle->texture = TextureEnum::CHECKER;
+    //make and add objects 
+    makeWhittedObjects();
 
-    Triangle* triangle2 = new Triangle();
-    triangle2->point0[X_AXIS] = 2.6; triangle2->point0[Y_AXIS] = 0; triangle2->point0[Z_AXIS] = -8;
-    triangle2->point1[X_AXIS] = 2.6; triangle2->point1[Y_AXIS] = 0; triangle2->point1[Z_AXIS] = 0;
-    triangle2->point2[X_AXIS] = -2.0; triangle2->point2[Y_AXIS] = 0; triangle2->point2[Z_AXIS] = -8;
-    triangle2->mat.color = {255, 100, 100};
-    triangle2->texture = TextureEnum::CHECKER;
+    //stanford bunny! 
+    float origin [3] = {0,-0.4,-3.75};
+    float scale = 8;
+    //todo 
+    //delete vectors
+    //loadPly("assets/stanford_bunny.ply", &world->objects, origin, scale);
+    //loadPly("assets/stanford_bunny_1k.ply", &world->objects, origin, scale);
+    //loadPly("assets/stanford_bunny_4k.ply", &world->objects, origin, scale);
+    //loadPly("assets/stanford_bunny_16k.ply", &world->objects, origin, scale);
+    //loadPly("assets/pyramid.ply", &world->objects, origin, scale);
+
+    printf("\nNumber of objects in world: %d", world->objects.size());
 
     //fun test for sea urchin wizard 
     Triangle* spike = new Triangle();
@@ -236,24 +329,21 @@ int main() {
     spike->point1[X_AXIS] = -2.0; spike->point1[Y_AXIS] = 2; spike->point1[Z_AXIS] = -3;
     spike->point2[X_AXIS] = 0; spike->point2[Y_AXIS] = 4; spike->point2[Z_AXIS] = -3;
     spike->mat.color = {255, 255, 0};
+    //world->addObject(spike);
 
-    //add everything into the world
-    world = new World();
-    world->addObject(sphere1);
-    world->addObject(sphere2);
-    world->addObject(triangle2);
-    world->addObject(triangle);
-
-    world->addLight(light);
-    //world->addLight(light_blue);
+    //makeTestSpheres();
 
     world->camera = &camera;
 
     // if using bounding for intersection detection, construct axis-aligned bounding boxes (AABB)
     if(USE_BOUNDING){
+        std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
         world->boxAllObjects();
+        std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+        printf("\nBuilding kd tree took %d microseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end-start));
     }
 
+    std::chrono::time_point<std::chrono::system_clock> renderingStart = std::chrono::system_clock::now();
     for(int y = 0; y < H; y++)
     {
         for(int x = 0; x < W; x++)
@@ -319,16 +409,10 @@ int main() {
 
     file.close();
 
-    std::time_t t = std::time(0);   // get time now
-    std::tm* now = std::localtime(&t);
-    std::cout 
-        << "\n"
-        << (now->tm_year + 1900) << '-' 
-         << (now->tm_mon + 1) << '-'
-         <<  now->tm_mday
-         <<" minute: "
-         << now->tm_min
-         << "\n";
+    
+    std::chrono::time_point<std::chrono::system_clock> renderingEnd = std::chrono::system_clock::now();
+    printf("\nRendering took %d seconds\n", std::chrono::duration_cast<std::chrono::seconds>(renderingEnd-renderingStart));
+
 
     return 0;
 }

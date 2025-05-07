@@ -45,6 +45,8 @@
         "xutility": "cpp",
         "vector": "cpp",
         "algorithm": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "string": "cpp",
+        "deque": "cpp"
     }
 }

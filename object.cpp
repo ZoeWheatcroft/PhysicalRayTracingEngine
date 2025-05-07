@@ -42,7 +42,7 @@ int Sphere::getTextureColor(IntersectionInfo* info)
 
 float Sphere::intersect(IntersectionInfo* info, Ray ray)
 {
-	info->mat.color = {255,0,0};
+	info->mat.color = {0,0,0};
     float dx = ray.direction[X_AXIS];
     float dy = ray.direction[Y_AXIS];
     float dz = ray.direction[Z_AXIS];
@@ -107,6 +107,8 @@ float Sphere::intersect(IntersectionInfo* info, Ray ray)
 
 float Triangle::intersect(IntersectionInfo* info, Ray ray)
 {
+	constexpr float epsilon = std::numeric_limits<float>::epsilon();
+
 	info->mat.color = {255,0,0};
 
 	float edge1 [3] = {0, 0, 0};
@@ -114,7 +116,6 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	float T [3] = {0,0,0};
 	float P [3] = {0,0,0};
 	float Q [3] = {0,0,0};
-	float N [3] = {0,0,0}; //normal
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -123,44 +124,41 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 		T[i] = ray.origin[i] - point0[i];
 	}
 
-	// P = cross product D x e2
-
-	crossProduct(ray.direction, edge2, P);
-
-	//cross product T and e1
-	crossProduct(T, edge1, Q);
-	
-	crossProduct(edge2, edge1, info->normal);
+	//calculate normal
+	crossProduct(edge1, edge2, info->normal);
 
 	//normalize normal
 	float normalMag = sqrt(pow(info->normal[X_AXIS], 2) + pow(info->normal[Y_AXIS], 2) + pow(info->normal[Z_AXIS], 2));
 	for(int i = 0; i < 3; i++)
 	{
-		float x = info->normal[i]/normalMag;
 		info->normal[i] = info->normal[i]/normalMag;
 	}
 
+	// P = cross product D x e2
+	crossProduct(ray.direction, edge2, P);
 
-	//TODO normal calculation
-	// info->normal[0] = 0;
-	// info->normal[1] = 1;
-	// info->normal[2] = 0;
+	//cross product T and e1
+	crossProduct(T, edge1, Q);
 	
-	
-
 	//denominator
-	float denominator = dotProduct(P, edge1);
+	float denominator = dotProduct(edge1, P);
 
-	if(denominator == 0)
+	if(denominator > -epsilon && denominator < epsilon)
+	{
+		return -1; //parallel to triangle
+	}
+
+	//this causes backface culling
+	if (denominator < epsilon)
 	{
 		return -1;
 	}
 
 	float w = dotProduct(Q, edge2)/denominator;
-	float u = dotProduct(P, T)/denominator;
+	float u = dotProduct(P,T)/denominator;
 	float v = dotProduct(Q, ray.direction)/denominator;
 
-	if(u < 0 || v < 0 || u + v > 1)
+	if(u < 0 || v < 0 || u + v > 1 || u > 1)
 	{
 		return -1;
 	}
@@ -175,8 +173,7 @@ float Triangle::intersect(IntersectionInfo* info, Ray ray)
 	
 	info->id = this->id;
 
-	return w;
-	            
+	return w;    
 }
 
 int Triangle::getTextureColor(IntersectionInfo *info)
@@ -215,10 +212,10 @@ int Triangle::getTextureColor(IntersectionInfo *info)
 		int zMod = (int)std::floor(std::fabs(z - point0[Z_AXIS])/checkerWidth)%2;
 		if(xMod == zMod)
 		{
-			info->mat.color = {255, 0, 0};
+			info->mat.color = {100, 200, 100};
 		}
 		else{
-			info->mat.color = {255, 255, 0};
+			info->mat.color = {50, 150, 50};
 		}
 	}
 

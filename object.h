@@ -17,6 +17,7 @@ struct Material{
     float kD = 0.5;
     float kR = 0; // reflection constant 
     float kT = 0; // transmission constant
+    float iR = 0.95; //index of refraction
 };
 
 //intersection info: location, normal, color

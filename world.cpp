@@ -16,9 +16,6 @@ void World::boxAllObjects()
     rootBox = new BoundingBox(rootMin, rootMax);
 
     std::vector<BoundingBox*> boxes;
-    float t [3] = {1,2,3};
-    BoundingBox* test = new BoundingBox(t, t);
-    boxes.push_back(test);
 
     //construct all boxes 
     for(Object* obj : objects){
@@ -261,7 +258,7 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         {
             float x = 0;
             x = info->normal[i];
-            alteredOrigin[i] += x*0.01;
+            alteredOrigin[i] += x*0.001;
         }
 
         Ray ray;
@@ -282,12 +279,12 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         {
             IntersectionInfo* lightInfo = new struct IntersectionInfo;
             float dist = obj->intersect(lightInfo, ray);
-            delete lightInfo;
-            if(dist != 1 && dist > 0){
+            if(dist != 1 && dist > 0 && lightInfo->mat.kT != 1.0){
                 const char* type = typeid(*obj).name();
                 lightBlocked = 1;
                 break;
             }
+            delete lightInfo;
         }
         if(lightBlocked)
         {
@@ -341,6 +338,12 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
             reflectionVector[i] = reflectionVector[i] * temp;
             reflectionVector[i] = incomingLightDir[i] - reflectionVector[i];
         }
+        //normalize reflection vector
+        float reflectionMag = sqrt(pow(reflectionVector[X_AXIS], 2) + pow(reflectionVector[Y_AXIS], 2) + pow(reflectionVector[Z_AXIS], 2));
+        for(int i = 0; i < 3; i++)
+        {
+            reflectionVector[i] = reflectionVector[i]/reflectionMag;
+        }
         
         //reverse of that
         float viewingDir [3] = {};
@@ -362,9 +365,7 @@ int World::applyPhong(IntersectionInfo* info, Color* L)
         specularScalar = specularScalar * info->mat.kS;
         Color* specColor = new Color();
         *specColor = light->mat.color;
-        specColor->red = specColor->red*specularScalar;
-        specColor->green = specColor->green*specularScalar;
-        specColor->blue = specColor->blue*specularScalar;
+        specColor->scale(specularScalar);
 
         //add diffuse
         L->add(specColor);
@@ -406,4 +407,54 @@ void World::getReflectionVector(IntersectionInfo* info, Ray incomingRay, Ray* re
     {
         reflectionRay->direction[i] = reflectionRay->direction[i]/magnitude;
     }
+}
+
+void World::getTransmissionVector(IntersectionInfo *info, Ray incomingRay, Ray *transmissionRay)
+{
+    //set new transmission origin slightly offset into sphere
+    std::copy(std::begin(info->intersectionLocation), std::end(info->intersectionLocation), std::begin(transmissionRay->origin));
+
+    //get indices of refraction in place coming from and entering into (ni and nt)
+    float nI = incomingRay.originRefraction;
+    float nT = info->mat.iR;
+
+    float nRatio = nI/nT;
+
+    //calculate refelction vector
+    for(int i = 0; i < 3; i++)
+    {
+        transmissionRay->direction[i] = incomingRay.direction[i]*nRatio;
+    }
+    //get negative incoming
+    float negIncoming [3];
+    for(int i = 0; i < 3; i++)
+    {
+        negIncoming[i] = incomingRay.direction[i]*-1;
+    }
+    float cosTheta = dotProduct(negIncoming, info->normal);
+
+    float sinTheta = pow(nRatio, 2)*(1-pow(cosTheta,2));
+
+    //check for total internal reflection 
+    if(sinTheta > nRatio)
+    {
+        getReflectionVector(info, incomingRay, transmissionRay);
+        return;
+    }
+
+    float temp = nRatio*cosTheta - sqrt(1 - pow(sinTheta,2));
+
+    for(int i = 0; i < 3; i++){
+        transmissionRay->direction[i] += info->normal[i]*temp;
+    }
+
+    //normalize vector 
+    float magnitude = sqrt(pow(transmissionRay->direction[X_AXIS], 2) + pow(transmissionRay->direction[Y_AXIS], 2) + pow(transmissionRay->direction[Z_AXIS], 2));
+    for(int i = 0; i < 3; i++)
+    {
+        transmissionRay->direction[i] = transmissionRay->direction[i]/magnitude;
+    }
+
+    transmissionRay->originRefraction = nT;
+
 }
