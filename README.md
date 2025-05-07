@@ -4,6 +4,7 @@
 - [Extra Additions](#extra-additions)
 - K-D Tree
 - Super Sampling
+- Transmission Shadow
 
 # Summary
 
@@ -14,6 +15,10 @@ C++ physics based ray tracing engine-- in progress!
 code [here](https://github.com/ZoeWheatcroft/PhysicalRayTracingEngine)
 
 # Basic Milestones
+## **Refraction**
+![refraction](https://github.com/user-attachments/assets/43b7ca9d-60d0-4e83-97e5-715e0964d0ff)
+![non-refractive](https://github.com/user-attachments/assets/cbc6936c-f971-476b-97e1-8f9f64bee4fb)
+The same scene with a refractive and non-refractive first ball. I also modified the shadow ray test to take transmissive materials into account-- I didn't realize that not only would a glass ball, as in this case, not have a shadow, but it also has _two_ specular highlights. 
 
 ## **Reflection**
 
@@ -70,3 +75,7 @@ With the supersampling (4 rays per pixel):
 
 Without the supersampling:
 ![image](https://github.com/user-attachments/assets/4c5103e6-6461-4256-a027-cc28b3f59bf7)
+
+## **Transmissive material shadow**
+![refraction](https://github.com/user-attachments/assets/43b7ca9d-60d0-4e83-97e5-715e0964d0ff)
+
