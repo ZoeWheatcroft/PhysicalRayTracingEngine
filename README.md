@@ -2,6 +2,8 @@
 
 - [Basic Milestones](#basic-milestones)
 - [Extra Additions](#extra-additions)
+- K-D Tree
+- Super Sampling
 
 # Summary
 
